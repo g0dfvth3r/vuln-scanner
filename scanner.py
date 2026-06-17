@@ -1,5 +1,8 @@
 import sys
 import requests
 
-r = requests.get(f'https://{sys.argv[1]}')
+url = sys.argv[1]
+if not url.startswith("http"):
+    url = "https://" + url
+r = requests.get(url)
 print(r.status_code, r.headers)
