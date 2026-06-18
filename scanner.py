@@ -39,6 +39,21 @@ def check_cookies(raw):
             else:
                 print(Fore.RED + f"    [NOT FOUND]" + Style.RESET_ALL + f" {flag}")
 
+def check_cors(url):
+    r = requests.get(url, headers= {"Origin": "https://evil.com"})
+    headers = r.headers
+    print('\nCORS:')
+    if "Access-Control-Allow-Origin" in headers:
+        value = headers["Access-Control-Allow-Origin"]
+        print(value)
+        if value == '*':
+            print(Fore.RED + 'Warning, Access-Control-Allow-Origin set to *. This is Dangerous' + Style.RESET_ALL)
+    else:
+        print(Fore.GREEN + "[SAFE] " + Style.RESET_ALL + "Access-Control-Allow-Origin not present")
+    if "Access-Control-Allow-Credentials" in headers:
+        if headers["Access-Control-Allow-Credentials"].lower() == "true":    
+            print(Fore.RED + 'Warning, Access-Control-Allow-Credentials is set to True. This is Dangerous' + Style.RESET_ALL)
+    
 def scan(url):
     if not url.startswith("http"):
         target = "https://" + url
@@ -48,6 +63,7 @@ def scan(url):
     print_headers(r.status_code, r.headers)
     check_security_headers(r.headers)
     check_cookies(r.raw)
+    check_cors(target)
 
 if __name__ == "__main__":
     scan(sys.argv[1])
