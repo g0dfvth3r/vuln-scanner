@@ -1,12 +1,15 @@
 import sys
 import requests
+from colorama import Fore, Style, init
+
+init()
 
 url = sys.argv[1]
 if not url.startswith("http"):
     url = "https://" + url
 
 r = requests.get(url)
-print(f"Status code: {r.status_code}\n")
+print('Status code:' + Fore.YELLOW + f' {r.status_code}\n' + Style.RESET_ALL)
 headers = r.headers
 
 for key, value in headers.items():
@@ -22,15 +25,9 @@ headers_to_check = [
 print('\nSecurity Headers:')
 for header in headers_to_check:
     if header in headers:
-        print(f'[FOUND]     {header}')
+        print(Fore.GREEN + '[FOUND]' + Style.RESET_ALL + f'     {header}')
     else:
-        print(f'[NOT FOUND] {header}')
-
-cookie_header_to_check = [
-    " secure",
-    " httponly",
-    " samesite"
-]
+        print(Fore.RED + '[NOT FOUND]' + Style.RESET_ALL + f' {header}')
 
 print('\nCookies:')
 for raw_cookie in r.raw.headers.getlist("Set-Cookie"):
@@ -42,7 +39,7 @@ for raw_cookie in r.raw.headers.getlist("Set-Cookie"):
     
     for flag in ["secure", "httponly", "samesite"]:
         if flag in cookie_lower:
-            print(f"    [FOUND]     {flag}")
+            print(Fore.GREEN + f"    [FOUND]     " + Style.RESET_ALL + f"{flag}")
         else:
-            print(f"    [NOT FOUND] {flag}")
+            print(Fore.RED + f"    [NOT FOUND]" + Style.RESET_ALL + f" {flag}")
     
