@@ -7,6 +7,7 @@ A Python-based web vulnerability scanner built as a portfolio project.
 - Checks for missing security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
 - Checks cookie flags (Secure, HttpOnly, SameSite)
 - Color coded terminal output
+- Checks open redirects 
 
 ## Usage
 ```bash
