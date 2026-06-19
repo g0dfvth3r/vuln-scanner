@@ -53,7 +53,16 @@ def check_cors(url):
     if "Access-Control-Allow-Credentials" in headers:
         if headers["Access-Control-Allow-Credentials"].lower() == "true":    
             print(Fore.RED + 'Warning, Access-Control-Allow-Credentials is set to True. This is Dangerous' + Style.RESET_ALL)
-    
+def check_redirects(url):
+    print('\nRedirects')
+    for i in [ 'next', 'redirect', 'url', 'return', 'returnUrl', 'goto', 'target', 'redir']:
+        target = url + '/login?' + i + '=https://evil.com'
+        r = requests.get(target)
+        if r.url.startswith('https://evil.com') and len(r.history) > 0:
+            print(Fore.RED + f'[VULNERABLE] {i} redirected to evil.com' + Style.RESET_ALL)
+        else:
+            print(Fore.GREEN + f'[SAFE] {i}' + Style.RESET_ALL)
+
 def scan(url):
     if not url.startswith("http"):
         target = "https://" + url
@@ -64,6 +73,7 @@ def scan(url):
     check_security_headers(r.headers)
     check_cookies(r.raw)
     check_cors(target)
+    check_redirects(target)
 
 if __name__ == "__main__":
     scan(sys.argv[1])
