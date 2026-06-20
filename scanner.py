@@ -1,6 +1,9 @@
 import sys
 import requests
 from colorama import Fore, Style, init
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
+from collections import deque
 
 init()
 
@@ -63,6 +66,46 @@ def check_redirects(url):
         else:
             print(Fore.GREEN + f'[SAFE] {i}' + Style.RESET_ALL)
 
+def get_links(url):
+    r = requests.get(url)
+    soup = BeautifulSoup(r.text, "html.parser")
+    links = soup.find_all("a")
+    full_urls = []
+    for link in links:
+        href = link.get("href")
+        
+        if href is None:
+            continue
+        
+        if href.startswith("mailto:") or href.startswith("javascript:") or href == "#":
+            continue
+        
+        full_url = urljoin(url, href)
+        full_urls.append(full_url)
+    
+    return full_urls
+
+def crawl(start_url, max_depth=2):
+    queue = [(start_url,0)]
+    visited = set()
+
+    while queue:
+        url, depth = queue.pop(0)
+
+        if url in visited:
+            continue
+        if depth > max_depth:
+            continue
+
+        visited.add(url)
+        new_links = get_links(url)
+
+        for new_link in new_links:
+            if urlparse(new_link).netloc == urlparse(start_url).netloc:
+                queue.append((new_link,depth +1))
+
+    return visited
+
 def scan(url):
     if not url.startswith("http"):
         target = "https://" + url
@@ -74,6 +117,10 @@ def scan(url):
     check_cookies(r.raw)
     check_cors(target)
     check_redirects(target)
+    discovered = crawl(target)
+    print(f"\nCrawled {len(discovered)} pages:")
+    for page in discovered:
+        print(f"  {page}")
 
 if __name__ == "__main__":
     scan(sys.argv[1])
