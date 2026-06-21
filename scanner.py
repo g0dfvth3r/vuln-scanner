@@ -143,6 +143,61 @@ def check_xss(url):
         else:
             print(Fore.GREEN + f'NO XSS Detected with payload: {payload}' + Style.RESET_ALL)
 
+def check_sqli(url):
+    print('\nSQLI')
+    session = requests.Session()
+    r = session.get("http://localhost/login.php")
+    soup = BeautifulSoup(r.text, "html.parser")
+    token_input = soup.find("input", {"name": "user_token"})
+    user_token = token_input.get("value")
+    session.post("http://localhost/login.php",data={
+        "username": "admin",
+        "password": "password",
+        "Login": "Login",
+        "user_token": user_token
+    })
+    
+    r = session.get("http://localhost/security.php")
+    soup = BeautifulSoup(r.text, "html.parser")
+    token_input = soup.find("input", {"name": "user_token"})
+    security_token = token_input.get("value")
+    session.post("http://localhost/security.php", data={
+        "security": "low",
+        "seclev_submit": "Submit",
+        "user_token": security_token
+    })
+
+    payloads = [
+        "'",
+        '"',
+        "' OR '1'='1",
+        "1' OR '1'='1"
+    ]
+
+    errors = [
+        'SQL syntax',
+        'mysql_fetch',
+        'ORA-01756',
+        'PostgreSQL',
+        'SQLite3::'
+    ]
+
+    for payload in payloads:
+        r = session.get(url, params={
+            "id": payload,
+            "Submit": "Submit"
+        })
+        found = False
+        for error in errors:
+            if error in r.text:
+                found = True
+                break
+        if found:
+            print(Fore.RED + f"[VULNERABLE] {payload}" + Style.RESET_ALL)
+        else:
+            print(Fore.GREEN + f"[SAFE] {payload}" + Style.RESET_ALL)
+
+
 def scan(url):
     if not url.startswith("http"):
         target = "https://" + url
@@ -162,6 +217,6 @@ def scan(url):
         print(f"  {page}")
 
     check_xss(target)
-
+    check_sqli(target)
 if __name__ == "__main__":
     scan(sys.argv[1])
