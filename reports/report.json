@@ -1,0 +1,19 @@
+{
+  "security_headers": {
+    "Content-Security-Policy": "not found",
+    "Strict-Transport-Security": "not found",
+    "X-Frame-Options": "not found",
+    "X-Content-Type-Options": "not found"
+  },
+  "xss": {
+    "<script>alert(\"test\")</script>": "vulnerable",
+    "<img src=\"x\" onerror=\"alert(\"XSS\")\">": "vulnerable",
+    "<svg/onload=alert(\"XSS\")>": "vulnerable"
+  },
+  "sqli": {
+    "'": "safe",
+    "\"": "safe",
+    "' OR '1'='1": "safe",
+    "1' OR '1'='1": "safe"
+  }
+}

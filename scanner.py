@@ -3,7 +3,7 @@ import requests
 from colorama import Fore, Style, init
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
-from collections import deque
+import json
 
 init()
 
@@ -20,12 +20,18 @@ def check_security_headers(headers):
     "X-Content-Type-Options",
     ]
 
+    results = {}
     print('\nSecurity Headers:')
+    
     for header in headers_to_check:
         if header in headers:
             print(Fore.GREEN + '[FOUND]' + Style.RESET_ALL + f'     {header}')
+            results[header] = 'found'
         else:
             print(Fore.RED + '[NOT FOUND]' + Style.RESET_ALL + f' {header}')
+            results[header] = 'not found'
+
+    return results
 
 def check_cookies(raw):
     print('\nCookies:')
@@ -56,6 +62,7 @@ def check_cors(url):
     if "Access-Control-Allow-Credentials" in headers:
         if headers["Access-Control-Allow-Credentials"].lower() == "true":    
             print(Fore.RED + 'Warning, Access-Control-Allow-Credentials is set to True. This is Dangerous' + Style.RESET_ALL)
+
 def check_redirects(url):
     print('\nRedirects')
     for i in [ 'next', 'redirect', 'url', 'return', 'returnUrl', 'goto', 'target', 'redir']:
@@ -130,18 +137,22 @@ def check_xss(url):
     security_token = token_input.get("value")
 
     session.post("http://localhost/security.php", data={
-        "security": "medium",
+        "security": "low",
         "seclev_submit": "Submit",
         "user_token": security_token
     })
-    
+    results = {}
+
     for payload in payloads:
         r = session.get(url, params={"name": payload})
         if payload in r.text:
-            #print(r.text)
+            results[payload] = 'vulnerable'
             print(Fore.RED + f'XSS Detected with payload: {payload}' + Style.RESET_ALL)
         else:
+            results[payload] = 'safe'
             print(Fore.GREEN + f'NO XSS Detected with payload: {payload}' + Style.RESET_ALL)
+    
+    return results
 
 def check_sqli(url):
     print('\nSQLI')
@@ -181,7 +192,8 @@ def check_sqli(url):
         'PostgreSQL',
         'SQLite3::'
     ]
-
+    results = {}
+    
     for payload in payloads:
         r = session.get(url, params={
             "id": payload,
@@ -193,10 +205,13 @@ def check_sqli(url):
                 found = True
                 break
         if found:
+            results[payload] = 'vulnerable'
             print(Fore.RED + f"[VULNERABLE] {payload}" + Style.RESET_ALL)
         else:
+            results[payload] = 'safe'
             print(Fore.GREEN + f"[SAFE] {payload}" + Style.RESET_ALL)
 
+    return results
 
 def scan(url):
     if not url.startswith("http"):
@@ -206,7 +221,7 @@ def scan(url):
     
     r = requests.get(target)
     print_headers(r.status_code, r.headers)
-    check_security_headers(r.headers)
+    headers_results = check_security_headers(r.headers)
     check_cookies(r.raw)
     check_cors(target)
     check_redirects(target)
@@ -216,7 +231,15 @@ def scan(url):
     for page in discovered:
         print(f"  {page}")
 
-    check_xss(target)
-    check_sqli(target)
+    xss_results = check_xss(target)
+    sqli_results = check_sqli(target)
+    all_results = {
+        'security_headers': headers_results,
+        'xss': xss_results,
+        'sqli': sqli_results
+    }
+    with open ("reports/report.json", "w") as f:
+        json.dump(all_results, f, indent=2)
+
 if __name__ == "__main__":
     scan(sys.argv[1])
