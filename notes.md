@@ -9,3 +9,4 @@ Cookie name including full value — needed to split on = not just ;
 Scope and parameters — biggest conceptual hurdle of the week, took a while to click
 Refactoring into functions — wanted to start over, worked through it step by step
 url reassignment inside scan() — subtle bug, fixed with target variable
+Anchor-Link limitation. Flagging same-page anchor links — internal navigation within one HTML page, not actual separate pages. 

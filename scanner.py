@@ -106,11 +106,49 @@ def crawl(start_url, max_depth=2):
 
     return visited
 
+def check_xss(url):
+    print('\nXSS')
+    payloads = ['<script>alert("test")</script>',
+    '<img src="x" onerror="alert("XSS")">',
+    '<svg/onload=alert("XSS")>'
+    ]
+    
+    session = requests.Session()
+    r = session.get("http://localhost/login.php")
+    soup = BeautifulSoup(r.text, "html.parser")
+    token_input = soup.find("input", {"name": "user_token"})
+    user_token = token_input.get("value")
+    session.post("http://localhost/login.php", data={
+        "username": "admin",
+        "password": "password",
+        "Login": "Login",
+        "user_token": user_token
+    })
+    r = session.get("http://localhost/security.php")
+    soup = BeautifulSoup(r.text, "html.parser")
+    token_input = soup.find("input", {"name": "user_token"})
+    security_token = token_input.get("value")
+
+    session.post("http://localhost/security.php", data={
+        "security": "medium",
+        "seclev_submit": "Submit",
+        "user_token": security_token
+    })
+    
+    for payload in payloads:
+        r = session.get(url, params={"name": payload})
+        if payload in r.text:
+            #print(r.text)
+            print(Fore.RED + f'XSS Detected with payload: {payload}' + Style.RESET_ALL)
+        else:
+            print(Fore.GREEN + f'NO XSS Detected with payload: {payload}' + Style.RESET_ALL)
+
 def scan(url):
     if not url.startswith("http"):
         target = "https://" + url
     else:
         target = url
+    
     r = requests.get(target)
     print_headers(r.status_code, r.headers)
     check_security_headers(r.headers)
@@ -119,8 +157,11 @@ def scan(url):
     check_redirects(target)
     discovered = crawl(target)
     print(f"\nCrawled {len(discovered)} pages:")
+    
     for page in discovered:
         print(f"  {page}")
+
+    check_xss(target)
 
 if __name__ == "__main__":
     scan(sys.argv[1])
