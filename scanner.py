@@ -4,6 +4,8 @@ from colorama import Fore, Style, init
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import json
+import importlib.util
+import os
 
 init()
 
@@ -213,33 +215,26 @@ def check_sqli(url):
 
     return results
 
-def scan(url):
-    if not url.startswith("http"):
-        target = "https://" + url
-    else:
-        target = url
-    
-    r = requests.get(target)
-    print_headers(r.status_code, r.headers)
-    headers_results = check_security_headers(r.headers)
-    check_cookies(r.raw)
-    check_cors(target)
-    check_redirects(target)
-    discovered = crawl(target)
-    print(f"\nCrawled {len(discovered)} pages:")
-    
-    for page in discovered:
-        print(f"  {page}")
+def load_plugins(checks_dir="checks"):
+    plugins = []
+    for filename in os.listdir(checks_dir):
+        if filename.endswith(".py"):
+            filepath = os.path.join(checks_dir, filename)
+            spec = importlib.util.spec_from_file_location(filename, filepath)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            plugins.append(module)
+    return plugins
 
-    xss_results = check_xss(target)
-    sqli_results = check_sqli(target)
-    all_results = {
-        'security_headers': headers_results,
-        'xss': xss_results,
-        'sqli': sqli_results
-    }
+def scan(url):
+    results = {}
+    plugins = load_plugins()
+
+    for plugin in plugins:
+        plugin.run(url, results)
+
     with open ("reports/report.json", "w") as f:
-        json.dump(all_results, f, indent=2)
+        json.dump(results, f, indent=2)
 
 if __name__ == "__main__":
     scan(sys.argv[1])

@@ -1,17 +1,42 @@
 {
-  "security_headers": {
+  "Redirects": {
+    "next": "safe",
+    "redirect": "safe",
+    "url": "safe",
+    "return": "safe",
+    "returnUrl": "safe",
+    "goto": "safe",
+    "target": "safe",
+    "redir": "safe"
+  },
+  "XSS": {
+    "<script>alert(\"test\")</script>": "safe",
+    "<img src=\"x\" onerror=\"alert(\"XSS\")\">": "safe",
+    "<svg/onload=alert(\"XSS\")>": "safe"
+  },
+  "Security_headers": {
     "Content-Security-Policy": "not found",
     "Strict-Transport-Security": "not found",
     "X-Frame-Options": "not found",
     "X-Content-Type-Options": "not found"
   },
-  "xss": {
-    "<script>alert(\"test\")</script>": "vulnerable",
-    "<img src=\"x\" onerror=\"alert(\"XSS\")\">": "vulnerable",
-    "<svg/onload=alert(\"XSS\")>": "vulnerable"
+  "CORS": {
+    "Access-Control-Allow-Origin": "not present"
   },
-  "sqli": {
-    "'": "safe",
+  "Cookies": {
+    "PHPSESSID": {
+      "secure": "not found",
+      "httponly": "not found",
+      "samesite": "not found"
+    },
+    "security": {
+      "secure": "not found",
+      "httponly": "not found",
+      "samesite": "not found"
+    }
+  },
+  "SQLI": {
+    "'": "vulnerable",
     "\"": "safe",
     "' OR '1'='1": "safe",
     "1' OR '1'='1": "safe"
