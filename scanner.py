@@ -6,6 +6,8 @@ from urllib.parse import urljoin, urlparse
 import json
 import importlib.util
 import os
+from datetime import datetime
+import html
 
 init()
 
@@ -13,67 +15,6 @@ def print_headers(status_code, headers):
     print('Status code:' + Fore.YELLOW + f' {status_code}\n' + Style.RESET_ALL)
     for key, value in headers.items():
         print(key, ":", value)
-
-def check_security_headers(headers):
-    headers_to_check = [
-    "Content-Security-Policy",
-    "Strict-Transport-Security",
-    "X-Frame-Options",
-    "X-Content-Type-Options",
-    ]
-
-    results = {}
-    print('\nSecurity Headers:')
-    
-    for header in headers_to_check:
-        if header in headers:
-            print(Fore.GREEN + '[FOUND]' + Style.RESET_ALL + f'     {header}')
-            results[header] = 'found'
-        else:
-            print(Fore.RED + '[NOT FOUND]' + Style.RESET_ALL + f' {header}')
-            results[header] = 'not found'
-
-    return results
-
-def check_cookies(raw):
-    print('\nCookies:')
-    for raw_cookie in raw.headers.getlist("Set-Cookie"):
-        parts = raw_cookie.split(";")
-        cookie_name = parts[0].split("=")[0].strip()
-        cookie_lower = raw_cookie.lower()
-
-        print(f"\n  {cookie_name}")
-
-        for flag in ["secure", "httponly", "samesite"]:
-            if flag in cookie_lower:
-                print(Fore.GREEN + f"    [FOUND]     " + Style.RESET_ALL + f"{flag}")
-            else:
-                print(Fore.RED + f"    [NOT FOUND]" + Style.RESET_ALL + f" {flag}")
-
-def check_cors(url):
-    r = requests.get(url, headers= {"Origin": "https://evil.com"})
-    headers = r.headers
-    print('\nCORS:')
-    if "Access-Control-Allow-Origin" in headers:
-        value = headers["Access-Control-Allow-Origin"]
-        print(value)
-        if value == '*':
-            print(Fore.RED + 'Warning, Access-Control-Allow-Origin set to *. This is Dangerous' + Style.RESET_ALL)
-    else:
-        print(Fore.GREEN + "[SAFE] " + Style.RESET_ALL + "Access-Control-Allow-Origin not present")
-    if "Access-Control-Allow-Credentials" in headers:
-        if headers["Access-Control-Allow-Credentials"].lower() == "true":    
-            print(Fore.RED + 'Warning, Access-Control-Allow-Credentials is set to True. This is Dangerous' + Style.RESET_ALL)
-
-def check_redirects(url):
-    print('\nRedirects')
-    for i in [ 'next', 'redirect', 'url', 'return', 'returnUrl', 'goto', 'target', 'redir']:
-        target = url + '/login?' + i + '=https://evil.com'
-        r = requests.get(target)
-        if r.url.startswith('https://evil.com') and len(r.history) > 0:
-            print(Fore.RED + f'[VULNERABLE] {i} redirected to evil.com' + Style.RESET_ALL)
-        else:
-            print(Fore.GREEN + f'[SAFE] {i}' + Style.RESET_ALL)
 
 def get_links(url):
     r = requests.get(url)
@@ -115,105 +56,54 @@ def crawl(start_url, max_depth=2):
 
     return visited
 
-def check_xss(url):
-    print('\nXSS')
-    payloads = ['<script>alert("test")</script>',
-    '<img src="x" onerror="alert("XSS")">',
-    '<svg/onload=alert("XSS")>'
-    ]
+def generate_html_report(url, results):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sections_html = ""
+    for section_name, findings in results.items():
+        sections_html += f"<h2>{section_name}</h2>"
+        sections_html += "<ul>"
+        # findings can be a dict or nested dict
+        # for now just convert each finding to a list item
+        if isinstance(findings, dict):
+            for key, value in findings.items():
+                if isinstance(value, dict):
+                    sections_html += f"<li><strong>{key}</strong><ul>"
+                    for flag, flag_value in value.items():
+                        color = "green" if flag_value == "found" else "red"
+                        sections_html += f'<li style="color:{color}">{flag}: {flag_value}</li>'
+                    sections_html += "</ul></li>"
+                else:
+                    safe_key = html.escape(str(key))
+                    safe_value = html.escape(str(value))
+                    color = "green" if value in ["found", "safe", "not present"] else "red"
+                    sections_html += f'<li style="color:{color}">{safe_key}: {safe_value}</li>'
+
+            sections_html += "</ul>"  # ← outside the loop, closes the section's ul
     
-    session = requests.Session()
-    r = session.get("http://localhost/login.php")
-    soup = BeautifulSoup(r.text, "html.parser")
-    token_input = soup.find("input", {"name": "user_token"})
-    user_token = token_input.get("value")
-    session.post("http://localhost/login.php", data={
-        "username": "admin",
-        "password": "password",
-        "Login": "Login",
-        "user_token": user_token
-    })
-    r = session.get("http://localhost/security.php")
-    soup = BeautifulSoup(r.text, "html.parser")
-    token_input = soup.find("input", {"name": "user_token"})
-    security_token = token_input.get("value")
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Scan Report - {url}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; background: #1a1a1a; color: #fff; }}
+        h1 {{ color: #00ff88; }}
+        h2 {{ color: #00aaff; border-bottom: 1px solid #333; }}
+        ul {{ list-style: none; padding: 0; }}
+        li {{ padding: 4px 0; }}
+    </style>
+</head>
+<body>
+    <h1>Vulnerability Scanner Report</h1>
+    <p>Target: {url}</p>
+    <p>Scanned: {timestamp}</p>
+    {sections_html}
+</body>
+</html>"""
 
-    session.post("http://localhost/security.php", data={
-        "security": "low",
-        "seclev_submit": "Submit",
-        "user_token": security_token
-    })
-    results = {}
-
-    for payload in payloads:
-        r = session.get(url, params={"name": payload})
-        if payload in r.text:
-            results[payload] = 'vulnerable'
-            print(Fore.RED + f'XSS Detected with payload: {payload}' + Style.RESET_ALL)
-        else:
-            results[payload] = 'safe'
-            print(Fore.GREEN + f'NO XSS Detected with payload: {payload}' + Style.RESET_ALL)
+    with open("reports/report.html", "w") as f:
+        f.write(html_content)
     
-    return results
-
-def check_sqli(url):
-    print('\nSQLI')
-    session = requests.Session()
-    r = session.get("http://localhost/login.php")
-    soup = BeautifulSoup(r.text, "html.parser")
-    token_input = soup.find("input", {"name": "user_token"})
-    user_token = token_input.get("value")
-    session.post("http://localhost/login.php",data={
-        "username": "admin",
-        "password": "password",
-        "Login": "Login",
-        "user_token": user_token
-    })
-    
-    r = session.get("http://localhost/security.php")
-    soup = BeautifulSoup(r.text, "html.parser")
-    token_input = soup.find("input", {"name": "user_token"})
-    security_token = token_input.get("value")
-    session.post("http://localhost/security.php", data={
-        "security": "low",
-        "seclev_submit": "Submit",
-        "user_token": security_token
-    })
-
-    payloads = [
-        "'",
-        '"',
-        "' OR '1'='1",
-        "1' OR '1'='1"
-    ]
-
-    errors = [
-        'SQL syntax',
-        'mysql_fetch',
-        'ORA-01756',
-        'PostgreSQL',
-        'SQLite3::'
-    ]
-    results = {}
-    
-    for payload in payloads:
-        r = session.get(url, params={
-            "id": payload,
-            "Submit": "Submit"
-        })
-        found = False
-        for error in errors:
-            if error in r.text:
-                found = True
-                break
-        if found:
-            results[payload] = 'vulnerable'
-            print(Fore.RED + f"[VULNERABLE] {payload}" + Style.RESET_ALL)
-        else:
-            results[payload] = 'safe'
-            print(Fore.GREEN + f"[SAFE] {payload}" + Style.RESET_ALL)
-
-    return results
+    print(Fore.GREEN + "\n[+] HTML report saved to reports/report.html" + Style.RESET_ALL)
 
 def load_plugins(checks_dir="checks"):
     plugins = []
@@ -235,6 +125,8 @@ def scan(url):
 
     with open ("reports/report.json", "w") as f:
         json.dump(results, f, indent=2)
+    
+    generate_html_report(url, results)
 
 if __name__ == "__main__":
     scan(sys.argv[1])
