@@ -1,8 +1,10 @@
-import requests
+import httpx
 from colorama import Fore, Style, init
+init()
 
-def run(url, results):
-    r = requests.get(url, headers= {"Origin": "https://evil.com"})
+async def run(url, results):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(url, headers= {"Origin": "https://evil.com"})
     headers = r.headers
     cors_results = {}
     print('\nCORS:')

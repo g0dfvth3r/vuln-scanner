@@ -8,6 +8,8 @@ import importlib.util
 import os
 from datetime import datetime
 import html
+import asyncio
+import inspect
 
 init()
 
@@ -116,12 +118,20 @@ def load_plugins(checks_dir="checks"):
             plugins.append(module)
     return plugins
 
+async def run_plugins(url, results, plugins):
+    tasks = []
+    for plugin in plugins:
+        if inspect.iscoroutinefunction(plugin.run):
+            tasks.append(plugin.run(url, results))
+        else:
+            plugin.run(url, results)
+    
+    await asyncio.gather(*tasks)
+
 def scan(url):
     results = {}
     plugins = load_plugins()
-
-    for plugin in plugins:
-        plugin.run(url, results)
+    asyncio.run(run_plugins(url, results, plugins))
 
     with open ("reports/report.json", "w") as f:
         json.dump(results, f, indent=2)

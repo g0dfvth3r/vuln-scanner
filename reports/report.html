@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Scan Report - http://localhost/vulnerabilities/sqli</title>
+    <title>Scan Report - http://localhost/vulnerabilities/xss_r/</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; background: #1a1a1a; color: #fff; }
         h1 { color: #00ff88; }
@@ -12,8 +12,8 @@
 </head>
 <body>
     <h1>Vulnerability Scanner Report</h1>
-    <p>Target: http://localhost/vulnerabilities/sqli</p>
-    <p>Scanned: 2026-06-26 21:50:21</p>
-    <h2>Redirects</h2><ul><li style="color:green">next: safe</li><li style="color:green">redirect: safe</li><li style="color:green">url: safe</li><li style="color:green">return: safe</li><li style="color:green">returnUrl: safe</li><li style="color:green">goto: safe</li><li style="color:green">target: safe</li><li style="color:green">redir: safe</li></ul><h2>XSS</h2><ul><li style="color:green">&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;: safe</li><li style="color:green">&lt;img src=&quot;x&quot; onerror=&quot;alert(&quot;XSS&quot;)&quot;&gt;: safe</li><li style="color:green">&lt;svg/onload=alert(&quot;XSS&quot;)&gt;: safe</li></ul><h2>Security_headers</h2><ul><li style="color:red">Content-Security-Policy: not found</li><li style="color:red">Strict-Transport-Security: not found</li><li style="color:red">X-Frame-Options: not found</li><li style="color:red">X-Content-Type-Options: not found</li></ul><h2>CORS</h2><ul><li style="color:green">Access-Control-Allow-Origin: not present</li></ul><h2>Cookies</h2><ul><li><strong>PHPSESSID</strong><ul><li style="color:red">secure: not found</li><li style="color:red">httponly: not found</li><li style="color:red">samesite: not found</li></ul></li><li><strong>security</strong><ul><li style="color:red">secure: not found</li><li style="color:red">httponly: not found</li><li style="color:red">samesite: not found</li></ul></li></ul><h2>SQLI</h2><ul><li style="color:red">&#x27;: vulnerable</li><li style="color:green">&quot;: safe</li><li style="color:green">&#x27; OR &#x27;1&#x27;=&#x27;1: safe</li><li style="color:green">1&#x27; OR &#x27;1&#x27;=&#x27;1: safe</li></ul>
+    <p>Target: http://localhost/vulnerabilities/xss_r/</p>
+    <p>Scanned: 2026-06-26 23:33:40</p>
+    <h2>XSS</h2><ul><li style="color:green">&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;: safe</li><li style="color:red">&lt;img src=&quot;x&quot; onerror=&quot;alert(&quot;XSS&quot;)&quot;&gt;: vulnerable</li><li style="color:red">&lt;svg/onload=alert(&quot;XSS&quot;)&gt;: vulnerable</li></ul><h2>SQLI</h2><ul><li style="color:green">&#x27;: safe</li><li style="color:green">&quot;: safe</li><li style="color:green">&#x27; OR &#x27;1&#x27;=&#x27;1: safe</li><li style="color:green">1&#x27; OR &#x27;1&#x27;=&#x27;1: safe</li></ul><h2>Security_headers</h2><ul><li style="color:red">Content-Security-Policy: not found</li><li style="color:red">Strict-Transport-Security: not found</li><li style="color:red">X-Frame-Options: not found</li><li style="color:red">X-Content-Type-Options: not found</li></ul><h2>CORS</h2><ul><li style="color:green">Access-Control-Allow-Origin: not present</li></ul><h2>Cookies</h2><ul><li><strong>PHPSESSID</strong><ul><li style="color:red">secure: not found</li><li style="color:red">httponly: not found</li><li style="color:red">samesite: not found</li></ul></li><li><strong>security</strong><ul><li style="color:red">secure: not found</li><li style="color:red">httponly: not found</li><li style="color:red">samesite: not found</li></ul></li></ul><h2>Redirects</h2><ul><li style="color:green">next: safe</li><li style="color:green">redirect: safe</li><li style="color:green">url: safe</li><li style="color:green">return: safe</li><li style="color:green">returnUrl: safe</li><li style="color:green">goto: safe</li><li style="color:green">target: safe</li><li style="color:green">redir: safe</li></ul>
 </body>
 </html>
